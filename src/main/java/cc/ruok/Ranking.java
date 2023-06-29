@@ -8,7 +8,6 @@ import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.EntityLiving;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.Position;
-import cn.nukkit.scheduler.AsyncTask;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -86,42 +85,37 @@ public class Ranking {
     }
 
     public static void updateFloatingText() {
-        Server.getInstance().getScheduler().scheduleAsyncTask(DSWB.getInstance(), new AsyncTask() {
-            @Override
-            public void onRun() {
-                Game.loadConfig();
-                Config config = Game.getConfig();
-                if (config.ranking == null) return;
-                Level level = Server.getInstance().getLevelByName(Game.getConfig().level);
-                Entity text = level.getEntity(Game.getConfig().rankingId);
-                if (text != null) text.kill();
-                Position position = new Position(config.ranking.x, config.ranking.y, config.ranking.z, level);
-                EntityLiving entity;
-                try {
-                    entity = new EntityLiving(level.getChunk(config.ranking.chunkX, config.ranking.chunkZ), Entity.getDefaultNBT(position)) {
-                        @Override
-                        public int getNetworkId() {
-                            return 81;
-                        }
-                    };
-                } catch (Exception e) {
-                    return;
+        Game.loadConfig();
+        Config config = Game.getConfig();
+        if (config.ranking == null) return;
+        Level level = Server.getInstance().getLevelByName(Game.getConfig().level);
+        Entity text = level.getEntity(Game.getConfig().rankingId);
+        if (text != null) text.kill();
+        Position position = new Position(config.ranking.x, config.ranking.y, config.ranking.z, level);
+        EntityLiving entity;
+        try {
+            entity = new EntityLiving(level.getChunk(config.ranking.chunkX, config.ranking.chunkZ), Entity.getDefaultNBT(position)) {
+                @Override
+                public int getNetworkId() {
+                    return 81;
                 }
-                Map<String, Float> map = sort();
-                config.rankingId = entity.getId();
-                config.save(DSWB.getConfigFile());
-                entity.setScale(0F);
-                int i = 0;
-                StringBuilder name = new StringBuilder("§e[[ §6别踩白块 §c-- §d排行榜 §e]]\n");
-                for (Map.Entry<String, Float> entry : map.entrySet()) {
-                    name.append("§aNo.").append(++i).append(" §l§e").append(entry.getKey()).append(" §f- §b").append(entry.getValue()).append("s\n");
-                }
-                name.append("§e[[ §6别踩白块 §c-- §d排行榜 §e]]");
-                entity.setNameTag(name.toString());
-                entity.setNameTagAlwaysVisible(true);
-                entity.spawnToAll();
-            }
-        });
+            };
+        } catch (Exception e) {
+            return;
+        }
+        Map<String, Float> map = sort();
+        config.rankingId = entity.getId();
+        config.save(DSWB.getConfigFile());
+        entity.setScale(0F);
+        int i = 0;
+        StringBuilder name = new StringBuilder("§e[[ §6别踩白块 §c-- §d排行榜 §e]]\n");
+        for (Map.Entry<String, Float> entry : map.entrySet()) {
+            name.append("§aNo.").append(++i).append(" §l§e").append(entry.getKey()).append(" §f- §b").append(entry.getValue()).append("s\n");
+        }
+        name.append("§e[[ §6别踩白块 §c-- §d排行榜 §e]]");
+        entity.setNameTag(name.toString());
+        entity.setNameTagAlwaysVisible(true);
+        entity.spawnToAll();
     }
 
     public static void removeFloatingText(Player player) {
