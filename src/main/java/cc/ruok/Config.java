@@ -20,6 +20,7 @@ public class Config {
     public int direction = 1;
     public Seat ranking;
     public long rankingId;
+    public boolean ready = false;
 
     public static Config load(File file) {
         try {

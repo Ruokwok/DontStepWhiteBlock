@@ -1,5 +1,5 @@
 name: Dont Step White Block
-version: final-final-final-version
+version: 4-final
 main: cc.ruok.DSWB
 load: POSTWORLD
 api: 1.0.0

@@ -31,7 +31,6 @@ public class Game {
             return null;
         }
         Game game = new Game();
-        loadConfig();
         status = 1;
         game.player = player;
         level = Server.getInstance().getLevelByName(config.level);
@@ -51,6 +50,7 @@ public class Game {
     }
 
     public void cancelTask() {
+        if (task == null) return;
         Server.getInstance().getScheduler().cancelTask(task.getTaskId());
     }
 

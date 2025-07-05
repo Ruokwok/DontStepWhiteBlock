@@ -10,6 +10,7 @@ import cn.nukkit.form.element.ElementLabel;
 import cn.nukkit.form.window.FormWindowCustom;
 import cn.nukkit.form.window.FormWindowModal;
 import cn.nukkit.level.Position;
+import cn.nukkit.math.NukkitRandom;
 
 public class Setting {
 
@@ -32,7 +33,15 @@ public class Setting {
     private Setting() {
     }
 
-    public void setting(Player player) {
+    public void setting(Player player, String cmd) {
+        if (Game.getStatus() == 1) {
+            player.sendMessage("§c游戏正在进行，请等待游戏结束后重试.");
+            return;
+        }
+        if (Game.getConfig().ready) {
+            player.sendMessage("§c游戏已经设置，请使用§a/" + cmd + " remove§c删除游戏后重试.");
+            return;
+        }
         if (setStep == 0) {
             this.player = player;
             FormWindowModal window = new FormWindowModal("别踩白块",
@@ -40,7 +49,7 @@ public class Setting {
                             "§a请建造一个 高5 宽4 的结构作为游戏画布\n" +
                             "§c*§b可使用任意方块\n" +
                             "§c*§b可位于x轴或z轴平面\n" +
-                            "§f建造完成后请再次使用§a/dswb set§f命令进行下一步的设置", "知道了", "关闭");
+                            "§f建造完成后请再次使用§a/" + cmd + " set§f命令进行下一步的设置", "知道了", "关闭");
             player.showFormWindow(window);
             setStep = 1;
         } else if (setStep == 1) {
@@ -84,6 +93,7 @@ public class Setting {
         config.startY = (int) ps.y;
         config.startZ = (int) ps.z;
         config.originY = (int) p1.y - 4;
+        config.ready = true;
         if (p1.z == p2.z) {
             config.direction = 0;
             if (p1.x > p2.x) {
@@ -103,6 +113,7 @@ public class Setting {
                 config.originZ = (int) p2.z;
             }
         }
+        config.rankingId = new NukkitRandom().nextInt();
         config.save(DSWB.getConfigFile());
         Game.loadConfig();
         new Game().stop();

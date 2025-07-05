@@ -6,11 +6,9 @@ import cn.nukkit.block.Block;
 import cn.nukkit.event.EventHandler;
 import cn.nukkit.event.Listener;
 import cn.nukkit.event.level.ChunkLoadEvent;
-import cn.nukkit.event.player.PlayerFormRespondedEvent;
-import cn.nukkit.event.player.PlayerInteractEvent;
-import cn.nukkit.event.player.PlayerJoinEvent;
-import cn.nukkit.event.player.PlayerQuitEvent;
+import cn.nukkit.event.player.*;
 import cn.nukkit.form.response.FormResponseCustom;
+import cn.nukkit.level.Level;
 
 import java.util.HashMap;
 
@@ -18,13 +16,14 @@ public class BaseListener implements Listener {
 
     @EventHandler
     public void onClick(PlayerInteractEvent event) {
+        if (!Game.getConfig().ready) return;
         Block block = event.getBlock();
 //        event.getPlayer().sendMessage("x"+block.x + " y"+ block.y+" z"+block.z);
 
         Config config = Game.getConfig();
         if (config == null) return;
         if (block.x == config.startX && block.y == config.startY && block.z == config.startZ) {
-            Game.start(event.getPlayer());
+            DSWB.game = Game.start(event.getPlayer());
         }
     }
 
@@ -53,13 +52,29 @@ public class BaseListener implements Listener {
     }
 
     @EventHandler
-    public void onChunkLoad(ChunkLoadEvent event) {
-        Config config = Game.getConfig();
-        if (config!= null && config.ranking != null) {
-            if (event.getChunk().getX() == config.ranking.chunkX && event.getChunk().getZ() == config.ranking.chunkZ) {
-                Ranking.updateFloatingText();
-            }
+    public void onJoin(PlayerJoinEvent event) {
+        if (Game.getConfig().ready) {
+            Ranking.showFloatingText(event.getPlayer());
         }
     }
+
+    @EventHandler
+    public void onMove(PlayerTeleportEvent event) {
+        Ranking.removeFloatingText(event.getPlayer());
+        Level level = event.getTo().getLevel();
+        if (level == Ranking.getLevel()) {
+            Ranking.showFloatingText(event.getPlayer());
+        }
+    }
+
+//    @EventHandler
+//    public void onChunkLoad(ChunkLoadEvent event) {
+//        Config config = Game.getConfig();
+//        if (config!= null && config.ranking != null) {
+//            if (event.getChunk().getX() == config.ranking.chunkX && event.getChunk().getZ() == config.ranking.chunkZ) {
+//                Ranking.updateFloatingText();
+//            }
+//        }
+//    }
 
 }

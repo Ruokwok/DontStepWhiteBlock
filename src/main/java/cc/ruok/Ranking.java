@@ -1,13 +1,12 @@
 package cc.ruok;
 
-import cn.lanink.rankingapi.RankingAPI;
-import cn.lanink.rankingapi.RankingFormat;
 import cn.nukkit.Player;
 import cn.nukkit.Server;
 import cn.nukkit.entity.Entity;
-import cn.nukkit.entity.EntityLiving;
+import cn.nukkit.entity.data.EntityMetadata;
 import cn.nukkit.level.Level;
-import cn.nukkit.level.Position;
+import cn.nukkit.network.protocol.AddEntityPacket;
+import cn.nukkit.network.protocol.RemoveEntityPacket;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,7 +17,8 @@ public class Ranking {
 
     private static final File FILE = new File(DSWB.getInstance().getDataFolder(), "ranking.properties");
     private static HashMap<String, String> ranking;
-    private static cn.lanink.rankingapi.Ranking text;
+    private static String text;
+    private static Level level;
 
     public static boolean put(String player, int score) {
         if (get(player) >= 0 && score >= get(player)) return false;
@@ -34,6 +34,7 @@ public class Ranking {
     }
 
     public static void load() {
+        level = Server.getInstance().getLevelByName(Game.getConfig().level);
         if (FILE.exists()) {
             try {
                 Properties properties = new Properties();
@@ -85,45 +86,53 @@ public class Ranking {
     }
 
     public static void updateFloatingText() {
-        Game.loadConfig();
         Config config = Game.getConfig();
         if (config.ranking == null) return;
-        Level level = Server.getInstance().getLevelByName(Game.getConfig().level);
-        Entity text = level.getEntity(Game.getConfig().rankingId);
-        if (text != null) text.kill();
-        Position position = new Position(config.ranking.x, config.ranking.y, config.ranking.z, level);
-        EntityLiving entity;
-        try {
-            entity = new EntityLiving(level.getChunk(config.ranking.chunkX, config.ranking.chunkZ), Entity.getDefaultNBT(position)) {
-                @Override
-                public int getNetworkId() {
-                    return 81;
-                }
-            };
-        } catch (Exception e) {
-            return;
-        }
         Map<String, Float> map = sort();
-        config.rankingId = entity.getId();
-        config.save(DSWB.getConfigFile());
-        entity.setScale(0F);
         int i = 0;
         StringBuilder name = new StringBuilder("§e[[ §6别踩白块 §c-- §d排行榜 §e]]\n");
         for (Map.Entry<String, Float> entry : map.entrySet()) {
             name.append("§aNo.").append(++i).append(" §l§e").append(entry.getKey()).append(" §f- §b").append(entry.getValue()).append("s\n");
         }
         name.append("§e[[ §6别踩白块 §c-- §d排行榜 §e]]");
-        entity.setNameTag(name.toString());
-        entity.setNameTagAlwaysVisible(true);
-        entity.spawnToAll();
+        Ranking.text = name.toString();
+        for (Player player : Server.getInstance().getOnlinePlayers().values()) {
+            showFloatingText(player);
+        }
+    }
+
+    public static void showFloatingText(Player player) {
+        if (player.getLevel() != level) return;
+        Config config = Game.getConfig();
+        AddEntityPacket packet = new AddEntityPacket();
+        packet.entityRuntimeId = config.rankingId;
+        packet.entityUniqueId = config.rankingId;
+        packet.type = 64;
+        packet.yaw = 0;
+        packet.headYaw = 0;
+        packet.pitch = 0;
+        packet.speedX = 0;
+        packet.speedY = 0;
+        packet.speedZ = 0;
+        packet.x = (float) config.ranking.x;
+        packet.y = (float) config.ranking.y;
+        packet.z = (float) config.ranking.z;
+        packet.metadata = new EntityMetadata()
+                .putString(Entity.DATA_NAMETAG, text)
+                .putBoolean(Entity.DATA_ALWAYS_SHOW_NAMETAG, true);
+        player.dataPacket(packet);
     }
 
     public static void removeFloatingText(Player player) {
-        Level level = Game.getLevel();
-        Entity text = level.getEntity(Game.getConfig().rankingId);
-        if (text != null) {
-            text.kill();
-            player.sendMessage("§l§a已移除排行榜.");
+//            player.sendMessage("§l§a已移除排行榜.");
+        RemoveEntityPacket pk = new RemoveEntityPacket();
+        pk.eid = Game.getConfig().rankingId;
+        player.dataPacket(pk);
+    }
+
+    public static void removeFloatingText() {
+        for (Player player : Server.getInstance().getOnlinePlayers().values()) {
+            removeFloatingText(player);
         }
     }
 
@@ -135,6 +144,14 @@ public class Ranking {
         seat.chunkX = player.getChunkX();
         seat.chunkZ = player.getChunkZ();
         return seat;
+    }
+
+    public static Level getLevel() {
+        return level;
+    }
+
+    public static String getText() {
+        return text;
     }
 
 
